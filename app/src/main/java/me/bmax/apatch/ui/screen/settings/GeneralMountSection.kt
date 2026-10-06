@@ -77,6 +77,26 @@ fun GeneralMountSection(
                 }
             )
         }
+        item(key = "general_kp_log", visible = true) {
+            var kpLogEnabled by remember { mutableStateOf(prefs.getBoolean("kp_log_enabled", false)) }
+            FolkSwitchPreference(
+                icon = Icons.Outlined.BugReport,
+                title = stringResource(id = R.string.settings_kp_log),
+                summary = stringResource(id = R.string.settings_kp_log_summary),
+                checked = kpLogEnabled,
+                onCheckedChange = { enabled ->
+                    scope.launch {
+                        // SUPER_CALL: control_feature(superkey, "log", state)
+                        // state=1 -> KP_LOG_VERB (W/E/I/D/V), state=0 -> KP_LOG_WARN (W/E only)
+                        val result = Natives.controlFeature("log", enabled)
+                        if (result == 0L) {
+                            kpLogEnabled = enabled
+                            prefs.edit().putBoolean("kp_log_enabled", enabled).apply()
+                        }
+                    }
+                },
+            )
+        }
         item(key = "general_selinux_hide", visible = true) {
             val kernelVersion = remember { getKernelVersionCode() }
             val kernelSupported = (kernelVersion ?: 0) >= 419
