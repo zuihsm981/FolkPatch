@@ -137,6 +137,16 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > FolkPatch.jks
 
+      - name: Verify keystore format
+        run: |
+          # Fail fast with a clear message if the keystore is in an unsupported
+          # format (e.g. legacy JKS on JDK 21+: "Tag number over 30 is not
+          # supported"). Convert it to PKCS12 with:
+          #   keytool -importkeystore -srckeystore X.jks -srcstoretype JKS \
+          #     -destkeystore X.p12 -deststoretype PKCS12
+          keytool -list -keystore FolkPatch.jks \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" 2>&1 | head -20
+
       - name: Create keystore.properties
         run: |
           cat > keystore.properties << 'EOF'
