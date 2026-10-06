@@ -347,12 +347,16 @@ jstring nativePathHideList(JNIEnv *env, jobject /* this */, jstring super_key_js
     ensureSuperKeyNonNull(super_key_jstr);
 
     const auto super_key = JUTFString(env, super_key_jstr);
-    char buf[4096] = { '\0' };
-    long rc = sc_pathhide_list(super_key.get(), buf, sizeof(buf));
+    // Kernel caps the list at FOLKPATCH_PATHHIDE_MAX_PATHS(256) x
+    // FOLKPATCH_PATHHIDE_MAX_PATH_LEN(512). A fixed 4096-byte stack buffer
+    // truncated longer lists (and could hand back a corrupt single-line
+    // string), so query with the full kernel capacity on the heap.
+    std::vector<char> buf(256 * 512, '\0');
+    long rc = sc_pathhide_list(super_key.get(), buf.data(), (int)buf.size());
     if (rc < 0) [[unlikely]] {
         LOGE("nativePathHideList error: %ld", rc);
     }
-    return env->NewStringUTF(buf);
+    return env->NewStringUTF(buf.data());
 }
 
 jlong nativePathHideClear(JNIEnv *env, jobject /* this */, jstring super_key_jstr) {
@@ -411,13 +415,15 @@ jlong nativePathHideUidRemove(JNIEnv *env, jobject /* this */, jstring super_key
 jstring nativePathHideUidList(JNIEnv *env, jobject /* this */, jstring super_key_jstr) {
     ensureSuperKeyNonNull(super_key_jstr);
     const auto super_key = JUTFString(env, super_key_jstr);
-    char buf[4096] = {0};
-    long rc = sc_pathhide_uid_list(super_key.get(), buf, sizeof(buf));
+    // Kernel caps the list at FOLKPATCH_PATHHIDE_MAX_UIDS(256); the old fixed
+    // 4096-byte buffer was more than enough, keep it heap sized for symmetry.
+    std::vector<char> buf(256 * 12, '\0');
+    long rc = sc_pathhide_uid_list(super_key.get(), buf.data(), (int)buf.size());
     if (rc < 0) [[unlikely]] {
         LOGE("nativePathHideUidList error: %ld", rc);
         return env->NewStringUTF("");
     }
-    return env->NewStringUTF(buf);
+    return env->NewStringUTF(buf.data());
 }
 
 jlong nativePathHideUidClear(JNIEnv *env, jobject /* this */, jstring super_key_jstr) {
