@@ -1,30 +1,6 @@
 name: Build FolkPatch
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'app/**'
-      - 'apd/**'
-      - 'fpd/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle/**'
-      - 'gradle.properties'
-      - 'version.properties'
-      - '.github/workflows/build.yml'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'app/**'
-      - 'apd/**'
-      - 'fpd/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle/**'
-      - 'gradle.properties'
-      - 'version.properties'
-      - '.github/workflows/build.yml'
   workflow_dispatch:
     inputs:
       build_type:
