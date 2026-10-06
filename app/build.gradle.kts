@@ -241,33 +241,14 @@ kotlin {
     }
 }
 
-// -PkernelPatchArtifacts=/absolute/path/to/artifacts packages nonempty local
-// kpimg-android and kptools-android. Omit it to restore published binaries.
-// This override applies to Boot-mode assets; jailbreak KO downloads are separate.
 fun registerDownloadTask(
-    taskName: String, srcUrl: String, destPath: String, project: Project, version: String? = null,
-    localArtifact: String? = null
+    taskName: String, srcUrl: String, destPath: String, project: Project, version: String? = null
 ) {
-    // Resolve project-relative paths during configuration, before task execution.
-    val localDir = project.providers.gradleProperty("kernelPatchArtifacts").orNull
-    val localSource = if (localDir != null && localArtifact != null) {
-        File(project.file(localDir), localArtifact)
-    } else {
-        null
-    }
     project.tasks.register(taskName) {
         val destFile = File(destPath)
         val versionFile = File("$destPath.version")
 
         doLast {
-            if (localSource != null) {
-                val source = localSource
-                check(source.isFile && source.length() > 0) { "Missing local KernelPatch artifact: $source" }
-                destFile.parentFile.mkdirs()
-                source.copyTo(destFile, overwrite = true)
-                versionFile.writeText("local")
-                return@doLast
-            }
             var forceDownload = false
             if (version != null) {
                 if (!versionFile.exists() || versionFile.readText().trim() != version) {
@@ -275,9 +256,9 @@ fun registerDownloadTask(
                 }
             }
 
-            if (!destFile.exists() || forceDownload || ArtifactDownload.isFileUpdated(srcUrl, destFile)) {
+            if (!destFile.exists() || forceDownload || isFileUpdated(srcUrl, destFile)) {
                 println(" - Downloading $srcUrl to ${destFile.absolutePath}")
-                ArtifactDownload.downloadFile(srcUrl, destFile)
+                downloadFile(srcUrl, destFile)
                 if (version != null) {
                     versionFile.writeText(version)
                 }
@@ -289,19 +270,16 @@ fun registerDownloadTask(
     }
 }
 
-// Task actions call a standalone helper rather than capturing the Gradle script.
-object ArtifactDownload {
-    fun isFileUpdated(url: String, localFile: File): Boolean {
-        val connection = URI.create(url).toURL().openConnection()
-        val remoteLastModified = connection.getHeaderFieldDate("Last-Modified", 0L)
-        return remoteLastModified > localFile.lastModified()
-    }
+fun isFileUpdated(url: String, localFile: File): Boolean {
+    val connection = URI.create(url).toURL().openConnection()
+    val remoteLastModified = connection.getHeaderFieldDate("Last-Modified", 0L)
+    return remoteLastModified > localFile.lastModified()
+}
 
-    fun downloadFile(url: String, destFile: File) {
-        URI.create(url).toURL().openStream().use { input ->
-            destFile.outputStream().use { output ->
-                input.copyTo(output)
-            }
+fun downloadFile(url: String, destFile: File) {
+    URI.create(url).toURL().openStream().use { input ->
+        destFile.outputStream().use { output ->
+            input.copyTo(output)
         }
     }
 }
@@ -329,22 +307,33 @@ fun downloadFileRetry(url: String, destFile: File, maxRetries: Int = 5) {
     }
 }
 
-registerDownloadTask(
-    taskName = "downloadKpimg",
-    srcUrl = "https://github.com/LyraVoid/KernelPatch/releases/download/$kernelPatchVersion/kpimg-android",
-    destPath = "${project.projectDir}/src/main/assets/kpimg",
-    project = project,
-    version = kernelPatchVersion,
-    localArtifact = "kpimg-android"
-)
+// 直接使用 app/src/main/assets 下已上传的 kpimg 本地文件，不再远程下载。
+// 支持两种文件名：assets/kpimg 直接使用；assets/kpimg-android 会在打包前复制为 kpimg。
+tasks.register("prepareKpimgAsset") {
+    val assetsDir = File("${project.projectDir}/src/main/assets")
+    val dest = File(assetsDir, "kpimg")
+    val uploaded = File(assetsDir, "kpimg-android")
+    doLast {
+        if (dest.exists()) {
+            println(" - Using local kpimg asset: ${dest.absolutePath}")
+        } else if (uploaded.exists()) {
+            uploaded.copyTo(dest, overwrite = true)
+            println(" - Copied ${uploaded.name} -> kpimg (local asset, no download)")
+        } else {
+            throw GradleException(
+                "kpimg asset not found. Place your kpimg at ${dest.absolutePath} " +
+                    "or ${uploaded.absolutePath} (e.g. the kpimg-android you uploaded)."
+            )
+        }
+    }
+}
 
 registerDownloadTask(
     taskName = "downloadKptools",
     srcUrl = "https://github.com/LyraVoid/KernelPatch/releases/download/$kernelPatchVersion/kptools-android",
     destPath = "${project.projectDir}/libs/arm64-v8a/libkptools.so",
     project = project,
-    version = kernelPatchVersion,
-    localArtifact = "kptools-android"
+    version = kernelPatchVersion
 )
 
 // Compat kp version less than 0.10.7
@@ -410,7 +399,7 @@ tasks.register<Exec>("buildFpd") {
 }
 
 tasks.getByName("preBuild").dependsOn(
-    "downloadKpimg",
+    "prepareKpimgAsset",
     "downloadKptools",
     "downloadCompatKpatch",
     "downloadJailbreakKo",
@@ -466,9 +455,6 @@ ksp {
 }
 
 dependencies {
-    implementation(project(":core:designsystem"))
-    implementation(project(":core:ui"))
-
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
@@ -486,8 +472,6 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-
-    testImplementation(libs.junit)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
