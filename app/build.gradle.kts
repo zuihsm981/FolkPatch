@@ -328,13 +328,25 @@ tasks.register("prepareKpimgAsset") {
     }
 }
 
-registerDownloadTask(
-    taskName = "downloadKptools",
-    srcUrl = "https://github.com/LyraVoid/KernelPatch/releases/download/$kernelPatchVersion/kptools-android",
-    destPath = "${project.projectDir}/libs/arm64-v8a/libkptools.so",
-    project = project,
-    version = kernelPatchVersion
-)
+// 直接使用 app/libs/arm64-v8a 下本地编译的 kptools（kptools-android 改名 libkptools.so），不再远程下载。
+tasks.register("prepareKptoolsLib") {
+    val dest = File("${project.projectDir}/libs/arm64-v8a/libkptools.so")
+    val uploaded = File("${project.projectDir}/libs/arm64-v8a/kptools-android")
+    doLast {
+        if (dest.exists()) {
+            println(" - Using local libkptools.so: ${dest.absolutePath}")
+        } else if (uploaded.exists()) {
+            uploaded.copyTo(dest, overwrite = true)
+            println(" - Copied kptools-android -> libkptools.so (local, no download)")
+        } else {
+            throw GradleException(
+                "libkptools.so not found. Place your locally built kptools-android at " +
+                    "${uploaded.absolutePath} or renamed as ${dest.absolutePath} " +
+                    "(build: cd tools && cmake --build . && mv kptools kptools-android)."
+            )
+        }
+    }
+}
 
 // Compat kp version less than 0.10.7
 // TODO: Remove in future
@@ -400,7 +412,7 @@ tasks.register<Exec>("buildFpd") {
 
 tasks.getByName("preBuild").dependsOn(
     "prepareKpimgAsset",
-    "downloadKptools",
+    "prepareKptoolsLib",
     "downloadCompatKpatch",
     "downloadJailbreakKo",
     "mergeScripts",
