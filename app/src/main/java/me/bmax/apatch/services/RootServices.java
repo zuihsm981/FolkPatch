@@ -33,16 +33,49 @@ public class RootServices extends RootService {
         try {
             UserManager um = (UserManager) getSystemService(Context.USER_SERVICE);
             if (um != null) {
-                List<UserHandle> userProfiles = um.getUserProfiles();
-                if (userProfiles != null) {
-                    for (UserHandle userProfile : userProfiles) {
-                        result.add(userProfile.hashCode());
+                // getUserProfiles() only returns the CURRENT user's profile group,
+                // so it never lists other users (user 10/11/...). Use the hidden
+                // UserManager.getUsers() to enumerate all users; RootService runs
+                // with root so hidden API + MANAGE_USERS checks pass.
+                try {
+                    Method getUsers = um.getClass().getMethod("getUsers");
+                    getUsers.setAccessible(true);
+                    Object users = getUsers.invoke(um);
+                    if (users instanceof List) {
+                        for (Object u : (List<?>) users) {
+                            try {
+                                Method getIdentifier = u.getClass().getMethod("getIdentifier");
+                                getIdentifier.setAccessible(true);
+                                Object id = getIdentifier.invoke(u);
+                                if (id instanceof Integer && !result.contains(id)) {
+                                    result.add((Integer) id);
+                                }
+                            } catch (Throwable ignored) {
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    Log.e(TAG, "UserManager.getUsers failed, fallback to profiles", e);
+                }
+
+                // Fallback: current user's profiles (only user 0 / work profile)
+                if (result.isEmpty()) {
+                    List<UserHandle> userProfiles = um.getUserProfiles();
+                    if (userProfiles != null) {
+                        for (UserHandle userProfile : userProfiles) {
+                            if (!result.contains(userProfile.hashCode())) {
+                                result.add(userProfile.hashCode());
+                            }
+                        }
                     }
                 }
             }
         } catch (Throwable e) {
             Log.e(TAG, "getUserIds failed", e);
             // Fallback to current user if UserManager fails
+            result.add(0);
+        }
+        if (result.isEmpty()) {
             result.add(0);
         }
         int[] out = new int[result.size()];
