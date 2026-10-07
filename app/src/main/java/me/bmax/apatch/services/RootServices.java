@@ -28,7 +28,7 @@ public class RootServices extends RootService {
         return new Stub();
     }
 
-    List<Integer> getUserIdsInternal() {
+    int[] getUserIdsInternal() {
         List<Integer> result = new ArrayList<>();
         try {
             UserManager um = (UserManager) getSystemService(Context.USER_SERVICE);
@@ -45,7 +45,11 @@ public class RootServices extends RootService {
             // Fallback to current user if UserManager fails
             result.add(0);
         }
-        return result;
+        int[] out = new int[result.size()];
+        for (int i = 0; i < result.size(); i++) {
+            out[i] = result.get(i);
+        }
+        return out;
     }
 
     List<PackageInfo> getInstalledPackagesAsUser(int flags, int userId) {
@@ -74,7 +78,7 @@ public class RootServices extends RootService {
         }
 
         @Override
-        public List<Integer> getUserIds() {
+        public int[] getUserIds() {
             return getUserIdsInternal();
         }
 
