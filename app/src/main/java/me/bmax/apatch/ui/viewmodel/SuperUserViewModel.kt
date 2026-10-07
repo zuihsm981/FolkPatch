@@ -578,7 +578,7 @@ class SuperUserViewModel : ViewModel() {
                         val userIds = service.userIds
                         Log.i(TAG, "RootService connected and retrieved ${packages.list.size} packages (user $selectedUserId)")
                         withContext(Dispatchers.Main) {
-                            if (userIds.isNotEmpty()) availableUserIds = userIds
+                            if (userIds.isNotEmpty()) availableUserIds = userIds.toList()
                             stopRootService()
                         }
                         packages.list
