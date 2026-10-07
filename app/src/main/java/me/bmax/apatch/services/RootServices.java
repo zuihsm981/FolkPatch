@@ -28,7 +28,7 @@ public class RootServices extends RootService {
         return new Stub();
     }
 
-    List<Integer> getUserIds() {
+    List<Integer> getUserIdsInternal() {
         List<Integer> result = new ArrayList<>();
         try {
             UserManager um = (UserManager) getSystemService(Context.USER_SERVICE);
@@ -43,18 +43,9 @@ public class RootServices extends RootService {
         } catch (Throwable e) {
             Log.e(TAG, "getUserIds failed", e);
             // Fallback to current user if UserManager fails
-            result.add(0); 
+            result.add(0);
         }
         return result;
-    }
-
-    ArrayList<PackageInfo> getInstalledPackagesAll(int flags) {
-        ArrayList<PackageInfo> packages = new ArrayList<>();
-        for (Integer userId : getUserIds()) {
-            Log.i(TAG, "getInstalledPackagesAll: " + userId);
-            packages.addAll(getInstalledPackagesAsUser(flags, userId));
-        }
-        return packages;
     }
 
     List<PackageInfo> getInstalledPackagesAsUser(int flags, int userId) {
@@ -71,15 +62,20 @@ public class RootServices extends RootService {
 
     class Stub extends IAPRootService.Stub {
         @Override
-        public ParcelableListSlice<PackageInfo> getPackages(int flags) {
+        public ParcelableListSlice<PackageInfo> getPackagesForUser(int userId, int flags) {
             try {
-                List<PackageInfo> list = getInstalledPackagesAll(flags);
-                Log.i(TAG, "getPackages: " + list.size());
+                List<PackageInfo> list = getInstalledPackagesAsUser(flags, userId);
+                Log.i(TAG, "getPackagesForUser: " + userId + " -> " + list.size());
                 return new ParcelableListSlice<>(list);
             } catch (Throwable e) {
-                Log.e(TAG, "getPackages failed", e);
+                Log.e(TAG, "getPackagesForUser failed", e);
                 return new ParcelableListSlice<>(new ArrayList<>());
             }
+        }
+
+        @Override
+        public List<Integer> getUserIds() {
+            return getUserIdsInternal();
         }
 
     }
