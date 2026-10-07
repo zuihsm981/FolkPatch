@@ -6,5 +6,5 @@ import rikka.parcelablelist.ParcelableListSlice;
 
 interface IAPRootService {
     ParcelableListSlice<PackageInfo> getPackagesForUser(int userId, int flags);
-    List<Integer> getUserIds();
+    int[] getUserIds();
 }
