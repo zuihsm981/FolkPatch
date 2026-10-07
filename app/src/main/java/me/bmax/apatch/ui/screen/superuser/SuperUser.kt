@@ -101,6 +101,7 @@ private fun SuperUserScreenModern(navigator: DestinationsNavigator, useLegacySuP
     }
 
     var showBatchExcludeDialog by remember { mutableStateOf(false) }
+    var showUserSwitcherDialog by remember { mutableStateOf(false) }
     var showAppActionDialog by remember { mutableStateOf(false) }
     var selectedApp by remember { mutableStateOf<SuperUserViewModel.AppInfo?>(null) }
     var showSuperUserMenu by remember { mutableStateOf(false) }
@@ -117,6 +118,18 @@ private fun SuperUserScreenModern(navigator: DestinationsNavigator, useLegacySuP
                 viewModel.reverseExcludeAll()
                 showBatchExcludeDialog = false
             }
+        )
+    }
+
+    if (showUserSwitcherDialog) {
+        UserSwitcherDialog(
+            users = viewModel.availableUserIds,
+            selectedUserId = viewModel.selectedUserId,
+            onSelect = { userId ->
+                showUserSwitcherDialog = false
+                viewModel.switchUser(userId)
+            },
+            onDismiss = { showUserSwitcherDialog = false },
         )
     }
 
@@ -242,6 +255,13 @@ private fun SuperUserScreenModern(navigator: DestinationsNavigator, useLegacySuP
                                     onClick = {
                                         showSuperUserMenu = false
                                         viewModel.showSystemApps = !viewModel.showSystemApps
+                                    },
+                                )
+                                WallpaperAwareDropdownMenuItem(
+                                    text = { Text(stringResource(R.string.su_switch_user)) },
+                                    onClick = {
+                                        showSuperUserMenu = false
+                                        showUserSwitcherDialog = true
                                     },
                                 )
                                 WallpaperAwareDropdownMenuItem(

@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -188,6 +192,74 @@ fun AppActionDialog(
                 }
                 TextButton(onClick = onForceStop) {
                     Text(text = forceStopText)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UserSwitcherDialog(
+    users: List<Int>,
+    selectedUserId: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val title = stringResource(R.string.su_switch_user)
+    val cancelText = stringResource(android.R.string.cancel)
+
+    FolkAlertDialog(
+        onDismissRequest = onDismiss,
+        width = 320.dp,
+        shape = FolkShape.Corner20,
+        dialogProperties = DialogProperties(decorFitsSystemWindows = true, usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOff, dismissOnClickOutside = false),
+    ) {
+        Column(modifier = Modifier.padding(PaddingValues(all = 24.dp))) {
+            Box(
+                Modifier
+                    .padding(PaddingValues(bottom = 16.dp))
+                    .align(Alignment.Start)
+            ) {
+                Text(text = title, style = MaterialTheme.typography.headlineSmall)
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(weight = 1f, fill = false)
+                    .padding(PaddingValues(bottom = 24.dp)),
+            ) {
+                users.forEach { userId ->
+                    val selected = userId == selectedUserId
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(userId) }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.su_user_name, userId),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (selected) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(text = cancelText)
                 }
             }
         }
