@@ -257,6 +257,8 @@
     <string name="su_show_system_apps">显示系统应用</string>
     <string name="su_hide_system_apps">隐藏系统应用</string>
     <string name="su_refresh">刷新</string>
+    <string name="su_switch_user">切换用户</string>
+    <string name="su_user_name">用户 %1$d</string>
     <string name="su_multi_select_title">选择应用</string>
     <string name="su_multi_select_count">已选择 %d 个</string>
     <string name="su_multi_select_grant_root">授予 ROOT</string>
