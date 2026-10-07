@@ -260,6 +260,8 @@
     <string name="su_show_system_apps">Show system apps</string>
     <string name="su_hide_system_apps">Hide system apps</string>
     <string name="su_refresh">Refresh</string>
+    <string name="su_switch_user">Switch user</string>
+    <string name="su_user_name">User %1$d</string>
     <string name="su_multi_select_title">Select Apps</string>
     <string name="su_multi_select_count">%d selected</string>
     <string name="su_multi_select_grant_root">Grant ROOT</string>
