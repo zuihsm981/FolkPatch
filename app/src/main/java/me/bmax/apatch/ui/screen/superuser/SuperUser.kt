@@ -188,6 +188,9 @@ private fun SuperUserScreenModern(navigator: DestinationsNavigator, useLegacySuP
     }
 
     LaunchedEffect(Unit) {
+        // 无条件先拉取用户列表，保证右上角「切换用户」进入页面即可显示所有用户，
+        // 不依赖下拉刷新；应用列表按需再拉。
+        viewModel.loadUserIds()
         if (viewModel.appList.isEmpty()) {
             viewModel.fetchAppList()
         }
