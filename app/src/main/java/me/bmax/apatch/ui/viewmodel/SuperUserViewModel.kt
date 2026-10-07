@@ -96,7 +96,20 @@ class SuperUserViewModel : ViewModel() {
         search = value
     }
 
+    fun switchUser(userId: Int) {
+        if (userId == selectedUserId) return
+        selectedUserId = userId
+        viewModelScope.launch { fetchAppList() }
+    }
+
     var showSystemApps by mutableStateOf(false)
+
+    // 超级用户应用列表按用户过滤：默认只显示 user 0 的应用，
+    // 右上角菜单可切换要显示的用户。
+    var selectedUserId by mutableStateOf(0)
+        private set
+    var availableUserIds by mutableStateOf(listOf(0))
+        private set
 
     init {
         viewModelScope.launch {
@@ -560,9 +573,12 @@ class SuperUserViewModel : ViewModel() {
 
                     if (result != null) {
                         val binder = result.first
-                        val packages = IAPRootService.Stub.asInterface(binder).getPackages(0)
-                        Log.i(TAG, "RootService connected and retrieved ${packages.list.size} packages")
+                        val service = IAPRootService.Stub.asInterface(binder)
+                        val packages = service.getPackagesForUser(selectedUserId, 0)
+                        val userIds = service.userIds
+                        Log.i(TAG, "RootService connected and retrieved ${packages.list.size} packages (user $selectedUserId)")
                         withContext(Dispatchers.Main) {
+                            if (userIds.isNotEmpty()) availableUserIds = userIds
                             stopRootService()
                         }
                         packages.list
