@@ -102,6 +102,28 @@ class SuperUserViewModel : ViewModel() {
         viewModelScope.launch { fetchAppList() }
     }
 
+    /** 只拉取设备用户列表，供右上角「切换用户」使用（不扫描包，进入页面即调用）。 */
+    suspend fun loadUserIds() {
+        try {
+            val result = withTimeoutOrNull(10000L) {
+                withContext(Dispatchers.Main) {
+                    connectRootService {
+                        Log.w(TAG, "RootService disconnected during loadUserIds")
+                    }
+                }
+            } ?: return
+            val binder = result.first
+            val service = IAPRootService.Stub.asInterface(binder)
+            val ids = service.userIds
+            withContext(Dispatchers.Main) {
+                if (ids.isNotEmpty()) availableUserIds = ids.toList()
+                stopRootService()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "loadUserIds failed: ${e.message}", e)
+        }
+    }
+
     var showSystemApps by mutableStateOf(false)
 
     // 超级用户应用列表按用户过滤：默认只显示 user 0 的应用，
