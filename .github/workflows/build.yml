@@ -18,7 +18,7 @@ env:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       build_debug: ${{ steps.set.outputs.debug }}
       build_release: ${{ steps.set.outputs.release }}
@@ -62,7 +62,7 @@ jobs:
     name: Build Debug
     needs: prepare
     if: needs.prepare.outputs.build_debug == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v5
@@ -96,7 +96,7 @@ jobs:
     name: Build Release
     needs: prepare
     if: needs.prepare.outputs.build_release == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v5
@@ -153,7 +153,7 @@ jobs:
     name: Upload to Telegram
     needs: [prepare, build_debug, build_release]
     if: always() && needs.prepare.result == 'success' && (needs.build_debug.result == 'success' || needs.build_release.result == 'success') && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check Telegram config
